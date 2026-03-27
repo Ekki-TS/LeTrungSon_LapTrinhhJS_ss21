@@ -2,117 +2,107 @@ let products = JSON.parse(localStorage.getItem("products")) || [];
 let editId = null;
 
 function submitForm() {
-    let status = false;
-
-    const inputName = document.getElementById("iName");
-    const inputPrice = document.getElementById("iPrice");
-    const inputStock = document.getElementById("iStock");
-
-    const name = inputName.value.trim();
-    const price = inputPrice.value.trim();
-    const stock = inputStock.value.trim();
+    const name = document.getElementById("iName").value.trim();
+    const price = Number(document.getElementById("iPrice").value);
+    const stock = Number(document.getElementById("iStock").value);
 
     if (name === "") {
-        alert(`Vui lòng nhập tên sản phẩm.`);
+        alert("Tên sản phẩm không được để trống");
         return;
     }
-    if (price < 0) {
-        alert(`Giá phải là số dương lớn hơn 0`);
+    if (price <= 0 || isNaN(price)) {
+        alert("Giá phải > 0");
         return;
     }
-    if (stock <= 0) {
-        status = "hết hàng";
-        alert(`Tồn kho phải là số nguyên lớn hơn 0.`);
+    if (stock < 0 || isNaN(stock)) {
+        alert("Tồn kho phải >= 0");
         return;
-    } else if (stock > 0) {
-        status = "còn hàng";
     }
+
+    const status = stock > 0 ? "Còn hàng" : "Hết hàng";
 
     if (editId === null) {
-        const newProducts = {
-            id: Math.floor(Math.random() * 100),
-            name: name,
-            price: price,
-            stock: stock,
-            status: status,
-        }
-        products.push(newProducts);
-        alert(`Thêm sản phẩm thành công.`); 
+        const newProduct = {
+            id: Date.now(),
+            name,
+            price,
+            stock,
+            status
+        };
 
-
-        editId = null;
-        document.getElementById("formTitle").innerText = " Thêm sản phẩm mới";
-        document.getElementById("btnSubmit").innerText = "Thêm sản phẩm";
-
-
-        render();
-        saveData();
-        resetForm();
+        products.push(newProduct);
+        alert("Thêm thành công!");
     }
+    else {
+        products = products.map(p => {
+            if (p.id === editId) {
+                return { ...p, name, price, stock, status };
+            }
+            return p;
+        });
+
+        alert("Cập nhật thành công!");
+        editId = null;
+    }
+
+    saveData();
+    render();
+    resetForm();
+
+    document.getElementById("formTitle").innerText = "Thêm sản phẩm";
+    document.getElementById("btnSubmit").innerText = "Thêm";
 }
 
-
-
 function render(data = products) {
-    const list = document.getElementById("tbody");
+    const tbody = document.getElementById("tbody");
 
-    list.innerHTML = data.map((product) => `
-                        <tr id="row-SPJ806NEC">
-                            <td>${product.id}</td>
-                            <td class="td-id">${product.name}</td>
-                            <td class="td-name">${product.price}</td>
-                            <td class="td-price">${product.stock}</td>    
-                            <td class="td-statust">${product.status}</td>
-                            <td>
-                                <div class="td-actions">
-                                    <button onclick="editProducts(${product.id})" class="btn btn-sm btn-edit">✏ Sửa</button>
-                                    <button onclick="deleteProducts(${product.id})"class="btn btn-sm btn-del">✕ Xóa</button>
-                                </div>
-                            </td>
-                        </tr>
+    tbody.innerHTML = data.map(p => `
+        <tr>
+            <td>${p.id}</td>
+            <td>${p.name}</td>
+            <td>${p.price}</td>
+            <td>${p.stock}</td>
+            <td>${p.status}</td>
+            <td>
+            <div class="td-actions">
+                <button onclick="editProduct(${p.id})" class="btn btn-sm btn-edit">Sửa</button>
+                <button onclick="deleteProduct(${p.id})" class="btn btn-sm btn-del">Xóa</button>
+        </div>
+</td>
+        </tr>
     `).join("");
 }
 
-function btnConfirm() {
-    let isConfirm = false;
-    const deleteId = document.getElementById("")
-
-    alert(`Bạn có chắc muốn xóa sản phẩm không`);
-    if (isConfirm = true) {
-        products = products.id((p) => p.id !== id)
-        alert(`Xóa sản phẩm thành công!`);
-    }
-
-    render();
-    saveData();
-}
-
-function deleteProducts(id) {
-    if (confirm(`Bạn có chắc chắn muốn xóa sản phẩm không?`)) {
-        prouduct = product.id((p) => p.id !== id)
-        alert(`Đã xóa sản phẩm thành công`)
+function deleteProduct(id) {
+    if (confirm("Bạn có chắc muốn xóa không?")) {
+        products = products.filter(p => p.id !== id);
         saveData();
         render();
+        alert("Đã xóa!");
     }
 }
 
-function editProducts(id) {
-    const product = products.find(s => s.id === id);
+function editProduct(id) {
+    const product = products.find(p => p.id === id);
 
-    const editName = document.getElementById("iName");
-    const editPrice = document.getElementById("iPrice");
-    const editStock = document.getElementById("iStock");
+    document.getElementById("iName").value = product.name;
+    document.getElementById("iPrice").value = product.price;
+    document.getElementById("iStock").value = product.stock;
 
-    const name = editName.value.trim();
-    const price = editPrice.value.trim();
-    const stock = editStock.value.trim();
+    editId = id;
 
     document.getElementById("formTitle").innerText = "Chỉnh sửa sản phẩm";
-    document.getElementById("btnSubmit").innerText = "Lưu thay đổi";
+    document.getElementById("btnSubmit").innerText = "Lưu";
+}
 
-    render();
-    saveData();
-    focus();
+function searchProducts() {
+    const keyword = document.getElementById("searchInput").value.toLowerCase();
+
+    const result = products.filter(p =>
+        p.name.toLowerCase().includes(keyword)
+    );
+
+    render(result);
 }
 
 function saveData() {
@@ -120,18 +110,10 @@ function saveData() {
 }
 
 function resetForm() {
-    const inputName = document.getElementById("iName").value = "";
-    const inputPrice = document.getElementById("iPrice").value = "";
-    const inputStock = document.getElementById("iStock").value = "";
-}
-
-function searchProducts() {
-    const keyword = document.getElementById("searchInput").value.toLowerCase();
-
-    const result = products.filter((p) =>
-        products.name.toLowerCase().includes(keyword)
-    );
-    render(result);
+    document.getElementById("iName").value = "";
+    document.getElementById("iPrice").value = "";
+    document.getElementById("iStock").value = "";
 }
 
 render();
+
